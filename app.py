@@ -260,7 +260,7 @@ def apply_styles() -> None:
         header[data-testid="stHeader"], footer { visibility:hidden; }
         #MainMenu { visibility:hidden; }
         .hero {
-            display:grid; grid-template-columns:1fr .9fr; gap:4rem; align-items:center;
+            display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,.9fr); gap:3rem; align-items:center;
             min-height:390px; padding:3.5rem; border-radius:12px; color:#fff; background:#000;
         }
         .hero-mark, .section-mark, .empty-mark {
@@ -268,16 +268,17 @@ def apply_styles() -> None:
             color:#fff; background:var(--blue); font-size:21px;
         }
         .eyebrow { margin:1rem 0 .5rem; color:#2997ff; font-size:12px; font-weight:600; }
-        .hero h1 { margin:0; font-size:clamp(40px,6vw,56px); line-height:1.07; letter-spacing:-.28px; }
-        .hero-copy { margin:.9rem 0 0; color:rgba(255,255,255,.75); font-size:17px; line-height:1.47; }
+        .hero h1 { margin:0; font-size:clamp(40px,5vw,52px); line-height:1.07; letter-spacing:-.28px; white-space:nowrap; }
+        .hero-copy { margin:.9rem 0 0; color:rgba(255,255,255,.75); font-size:17px; line-height:1.47; word-break:keep-all; }
         .progress-card { padding:1.5rem; border-radius:12px; background:#272729; }
         .progress-head { display:flex; justify-content:space-between; gap:1rem; align-items:center; }
-        .progress-label { color:#2997ff; font-size:12px; font-weight:600; }
-        .progress-title { margin:.3rem 0 0; font-size:21px; }
-        .progress-percent { color:#2997ff; font-size:40px; font-weight:600; }
+        .progress-label { color:#2997ff; font-size:12px; font-weight:600; white-space:nowrap; }
+        .progress-title { margin:.3rem 0 0; font-size:21px !important; white-space:nowrap; }
+        .progress-percent { color:#2997ff; font-size:40px; font-weight:600; white-space:nowrap; }
         .progress-track { height:8px; margin:1.5rem 0 .8rem; overflow:hidden; border-radius:999px; background:#424245; }
         .progress-fill { height:100%; border-radius:999px; background:#0071e3; transition:width .3s ease; }
         .progress-meta { display:flex; justify-content:space-between; color:rgba(255,255,255,.68); font-size:12px; }
+        .progress-meta > * { white-space:nowrap; }
         .progress-meta strong { color:#fff; }
         .section-title { display:flex; gap:14px; align-items:center; margin:.25rem 0 1rem; }
         .section-title h2 { margin:0; font-size:21px; }
@@ -332,7 +333,7 @@ def apply_styles() -> None:
             justify-content:center; border-radius:8px; background:#fff; text-align:center; }
         .empty h3 { margin:1rem 0 .35rem; font-size:17px; }
         .empty p { margin:0; color:rgba(0,0,0,.7); font-size:14px; }
-        @media (max-width:700px) {
+        @media (max-width:834px) {
             [data-testid="stAppViewContainer"] > .main .block-container { padding:.5rem .5rem 3rem; }
             .hero { grid-template-columns:1fr; gap:2.5rem; min-height:auto; padding:2.5rem 1.5rem; }
             .hero h1 { font-size:40px; }
