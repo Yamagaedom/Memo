@@ -1,1 +1,2 @@
+# The keyword classifier uses only Python's standard library.
 streamlit>=1.41,<2.0

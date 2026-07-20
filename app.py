@@ -17,6 +17,8 @@ import streamlit as st
 APP_TITLE = "오늘의 할 일"
 CATEGORIES = ("업무", "개인", "공부")
 FILTERS = ("전체", *CATEGORIES)
+AUTO_CATEGORY = "자동 분류"
+CATEGORY_OPTIONS = (AUTO_CATEGORY, *CATEGORIES)
 MAX_TITLE_LENGTH = 200
 DATA_FILE = Path(__file__).with_name(".todo-data.json")
 DATA_LOCK = threading.Lock()
@@ -25,6 +27,21 @@ CATEGORY_META = {
     "업무": {"icon": "▣", "class": "work"},
     "개인": {"icon": "●", "class": "personal"},
     "공부": {"icon": "◆", "class": "study"},
+}
+
+CATEGORY_KEYWORDS = {
+    "업무": (
+        "업무", "회의", "보고서", "프로젝트", "고객", "이메일", "메일", "발표",
+        "마감", "출근", "팀", "회의록", "계약", "견적", "결재", "거래처",
+    ),
+    "개인": (
+        "개인", "운동", "장보기", "병원", "약속", "청소", "빨래", "가족",
+        "친구", "여행", "예약", "요리", "쇼핑", "은행", "집", "생활",
+    ),
+    "공부": (
+        "공부", "학습", "강의", "과제", "시험", "복습", "독서", "책", "코딩",
+        "논문", "자격증", "단어", "수업", "연습", "문제집", "세미나",
+    ),
 }
 
 
@@ -36,6 +53,23 @@ def is_iso_date(value: Any) -> bool:
     except ValueError:
         return False
     return True
+
+
+def classify_category(title: str) -> str:
+    """Classify a title by keyword score, defaulting to the personal category."""
+    normalized_title = title.casefold()
+    scores = {
+        category: sum(normalized_title.count(keyword.casefold()) for keyword in keywords)
+        for category, keywords in CATEGORY_KEYWORDS.items()
+    }
+    best_category = max(CATEGORIES, key=lambda category: scores[category])
+    return best_category if scores[best_category] else "개인"
+
+
+def resolve_category(title: str, requested_category: str) -> str:
+    if requested_category == AUTO_CATEGORY:
+        return classify_category(title)
+    return requested_category
 
 
 def sanitize_todos(value: Any) -> list[dict[str, Any]]:
@@ -118,7 +152,8 @@ def persist(message: str) -> None:
 
 def add_todo() -> None:
     title = st.session_state.new_title.strip()
-    category = st.session_state.new_category
+    requested_category = st.session_state.new_category
+    category = resolve_category(title, requested_category)
     if not title:
         st.session_state.add_error = "할 일 제목을 입력해 주세요."
         return
@@ -138,7 +173,10 @@ def add_todo() -> None:
     )
     st.session_state.new_title = ""
     st.session_state.add_error = ""
-    persist("할 일을 추가했습니다.")
+    if requested_category == AUTO_CATEGORY:
+        persist(f"할 일을 추가하고 ‘{category}’로 자동 분류했습니다.")
+    else:
+        persist("할 일을 추가했습니다.")
 
 
 def toggle_todo(todo_id: str) -> None:
@@ -165,7 +203,8 @@ def cancel_edit() -> None:
 
 def save_edit(todo_id: str) -> None:
     title = st.session_state.get(f"edit_title_{todo_id}", "").strip()
-    category = st.session_state.get(f"edit_category_{todo_id}")
+    requested_category = st.session_state.get(f"edit_category_{todo_id}")
+    category = resolve_category(title, requested_category)
     if not title or len(title) > MAX_TITLE_LENGTH or category not in CATEGORIES:
         set_flash("제목과 카테고리를 확인해 주세요.", "⚠️")
         return
@@ -175,7 +214,10 @@ def save_edit(todo_id: str) -> None:
             todo["title"] = title
             todo["category"] = category
             st.session_state.editing_id = None
-            persist("할 일을 수정했습니다.")
+            if requested_category == AUTO_CATEGORY:
+                persist(f"할 일을 수정하고 ‘{category}’로 자동 분류했습니다.")
+            else:
+                persist("할 일을 수정했습니다.")
             return
 
 
@@ -362,7 +404,13 @@ def render_add_form() -> None:
                 placeholder="무엇을 해야 하나요?",
             )
         with category_col:
-            st.selectbox("카테고리", CATEGORIES, key="new_category")
+            st.selectbox(
+                "카테고리",
+                CATEGORY_OPTIONS,
+                key="new_category",
+                help="자동 분류는 제목의 키워드를 분석하며, 일치하는 키워드가 없으면 개인으로 분류합니다.",
+            )
+        st.caption("자동 분류 예시: ‘회의 자료 준비’ → 업무 · ‘시험 복습’ → 공부 · ‘장보기’ → 개인")
         st.form_submit_button("할 일 추가  ›", type="primary", use_container_width=True, on_click=add_todo)
         if st.session_state.add_error:
             st.error(st.session_state.add_error, icon="⚠️")
@@ -371,7 +419,7 @@ def render_add_form() -> None:
 def render_edit_form(todo: dict[str, Any]) -> None:
     todo_id = todo["id"]
     st.text_input("할 일 제목", key=f"edit_title_{todo_id}", max_chars=MAX_TITLE_LENGTH)
-    st.selectbox("카테고리", CATEGORIES, key=f"edit_category_{todo_id}")
+    st.selectbox("카테고리", CATEGORY_OPTIONS, key=f"edit_category_{todo_id}")
     save_col, cancel_col = st.columns(2)
     save_col.button(
         "저장",
@@ -441,7 +489,7 @@ def initialize_state() -> None:
         "editing_id": None,
         "pending_delete": None,
         "new_title": "",
-        "new_category": CATEGORIES[0],
+        "new_category": AUTO_CATEGORY,
         "add_error": "",
         "flash": None,
     }
